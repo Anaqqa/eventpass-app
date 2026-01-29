@@ -1,3 +1,4 @@
+import Link from "next/link";
 export default function Home() {
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
@@ -8,25 +9,25 @@ export default function Home() {
         </p>
 
         <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <a className="rounded-xl border p-4 hover:bg-gray-50" href="/buy">
+          <Link className="rounded-xl border p-4 hover:bg-gray-50" href="/buy">
             <div className="font-semibold">Acheter un billet</div>
             <div className="text-sm text-gray-600">Mint un NFT Ticket</div>
-          </a>
+          </Link>
 
-          <a className="rounded-xl border p-4 hover:bg-gray-50" href="/my-tickets">
+          <Link className="rounded-xl border p-4 hover:bg-gray-50" href="/my-tickets">
             <div className="font-semibold">Mes billets</div>
             <div className="text-sm text-gray-600">Voir les tickets détenus</div>
-          </a>
+          </Link>
 
-          <a className="rounded-xl border p-4 hover:bg-gray-50" href="/resell">
+          <Link className="rounded-xl border p-4 hover:bg-gray-50" href="/resell">
             <div className="font-semibold">Revendre</div>
             <div className="text-sm text-gray-600">Lister / acheter en revente</div>
-          </a>
+          </Link>
 
-          <a className="rounded-xl border p-4 hover:bg-gray-50" href="/validate">
+          <Link className="rounded-xl border p-4 hover:bg-gray-50" href="/validate">
             <div className="font-semibold">Valider</div>
             <div className="text-sm text-gray-600">Scanner / vérifier / burn</div>
-          </a>
+          </Link>
         </div>
       </div>
     </main>
