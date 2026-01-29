@@ -1,4 +1,7 @@
 import Link from "next/link";
+import ConnectWallet from "../src/components/ConnectWallet";
+
+
 export default function Home() {
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
@@ -7,6 +10,7 @@ export default function Home() {
         <p className="mt-2 text-gray-600">
           Billetterie blockchain : achat, revente contrôlée et validation de billets NFT.
         </p>
+        <ConnectWallet />
 
         <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Link className="rounded-xl border p-4 hover:bg-gray-50" href="/buy">
