@@ -2,17 +2,10 @@
 
 const DEFAULT_GATEWAY = "https://gateway.pinata.cloud/ipfs/";
 
-export function ipfsToHttp(uri: string): string {
-  if (!uri) return uri;
-
-  const gw = process.env.NEXT_PUBLIC_IPFS_GATEWAY || DEFAULT_GATEWAY;
-
-  // ipfs://CID
+export function ipfsToHttp(uri?: string) {
+  if (!uri) return "";
   if (uri.startsWith("ipfs://")) {
-    const clean = uri.replace("ipfs://", "").replace(/^ipfs\//, "");
-    return gw.endsWith("/") ? `${gw}${clean}` : `${gw}/${clean}`;
+    return uri.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/");
   }
-
-  // déjà http
   return uri;
 }

@@ -35,6 +35,20 @@ function extractSeat(meta?: TicketMeta) {
   return v ? String(v) : "—";
 }
 
+function parseDataTokenURI(tokenURI: string): TicketMeta | null {
+  const prefix = "data:application/json;base64,";
+  if (!tokenURI?.startsWith(prefix)) return null;
+
+  try {
+    const b64 = tokenURI.slice(prefix.length);
+    // decode base64 -> utf8
+    const json = decodeURIComponent(escape(window.atob(b64)));
+    return JSON.parse(json) as TicketMeta;
+  } catch {
+    return null;
+  }
+}
+
 export default function MyTicketsPage() {
   const router = useRouter();
   const [tickets, setTickets] = useState<MyTicket[]>([]);
@@ -55,13 +69,20 @@ export default function MyTicketsPage() {
           let meta: TicketMeta | undefined;
           let metaError: string | undefined;
 
-          try {
-            const url = ipfsToHttp(tokenURI);
-            const res = await fetch(url, { cache: "no-store" });
-            if (res.ok) meta = await res.json();
-            else metaError = `Metadata HTTP ${res.status}`;
-          } catch (e: any) {
-            metaError = e?.message || "Failed to fetch metadata";
+          // 
+          const metaFromData = parseDataTokenURI(tokenURI);
+          if (metaFromData) {
+            meta = metaFromData;
+          } else {
+            // 
+            try {
+              const url = ipfsToHttp(tokenURI);
+              const res = await fetch(url, { cache: "no-store" });
+              if (res.ok) meta = await res.json();
+              else metaError = `Metadata HTTP ${res.status}`;
+            } catch (e: any) {
+              metaError = e?.message || "Failed to fetch metadata";
+            }
           }
 
           return { tokenId, tokenURI, meta, metaError };
@@ -84,12 +105,16 @@ export default function MyTicketsPage() {
   return (
     <main className="min-h-screen p-6">
       <div className="mx-auto w-full max-w-3xl rounded-2xl border p-8">
-        <a href="/" className="text-sm underline">← Retour</a>
+        <a href="/" className="text-sm underline">
+          ← Retour
+        </a>
 
         <div className="mt-4 flex items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">Mes billets</h1>
-            <p className="mt-2 text-gray-600">Liste on-chain via tes events (Purchased/Resold/Validated).</p>
+            <p className="mt-2 text-gray-600">
+              Liste on-chain via tes events (Purchased/Resold/Validated).
+            </p>
           </div>
 
           <button
@@ -117,12 +142,16 @@ export default function MyTicketsPage() {
           {tickets.map((t) => {
             const tier = extractTier(t.meta).replace("_", " ");
             const seat = extractSeat(t.meta);
+
+            // Image: supporte ipfs:// ou http(s):// si meta.image
             const imageUrl = t.meta?.image ? ipfsToHttp(t.meta.image) : null;
 
             return (
               <div key={t.tokenId} className="rounded-xl border p-4">
                 <div className="flex items-center justify-between">
-                  <div className="font-semibold">#{t.tokenId} — {tier}</div>
+                  <div className="font-semibold">
+                    #{t.tokenId} — {tier}
+                  </div>
                   <span className="rounded-full border px-3 py-1 text-xs">ACTIVE</span>
                 </div>
 
