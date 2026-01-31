@@ -54,7 +54,7 @@ export async function validateAndBurn(tokenId: number) {
   await tx.wait();
   return tx;
 }
-
+ 
 // --- AJOUTS POUR "MY TICKETS" ---
 export async function getMyAddress() {
   const { signer } = await getContract();
@@ -66,15 +66,10 @@ export async function getMyTokenIds(): Promise<number[]> {
 
   if (!CONTRACT_ADDRESS) throw new Error("Missing CONTRACT_ADDRESS");
 
-  const owner = (await signer.getAddress()).toLowerCase();
-
-  // Signature ERC721 standard
+  const owner = ethers.getAddress(await signer.getAddress()); // checksum
   const TRANSFER_TOPIC0 = ethers.id("Transfer(address,address,uint256)");
-
-  // topics[1] et topics[2] = addresses indexées (32 bytes)
   const ownerTopic = ethers.zeroPadValue(owner, 32);
 
-  // Logs: Transfer(* -> owner)
   const toLogs = await provider.getLogs({
     address: CONTRACT_ADDRESS,
     fromBlock: 0,
@@ -82,15 +77,13 @@ export async function getMyTokenIds(): Promise<number[]> {
     topics: [TRANSFER_TOPIC0, null, ownerTopic],
   });
 
-  // Logs: Transfer(owner -> *)
   const fromLogs = await provider.getLogs({
     address: CONTRACT_ADDRESS,
     fromBlock: 0,
     toBlock: "latest",
-    topics: [TRANSFER_TOPIC0, ownerTopic],
+    topics: [TRANSFER_TOPIC0, ownerTopic, null],
   });
 
-  // On parse avec une interface minimale (pas besoin de ton ABI complet)
   const iface = new ethers.Interface([
     "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
   ]);
@@ -99,14 +92,12 @@ export async function getMyTokenIds(): Promise<number[]> {
 
   for (const log of toLogs) {
     const parsed = iface.parseLog(log);
-    const tokenId = Number(parsed.args.tokenId);
-    owned.add(tokenId);
+    owned.add(Number(parsed.args.tokenId));
   }
 
   for (const log of fromLogs) {
     const parsed = iface.parseLog(log);
-    const tokenId = Number(parsed.args.tokenId);
-    owned.delete(tokenId);
+    owned.delete(Number(parsed.args.tokenId));
   }
 
   return Array.from(owned).sort((a, b) => a - b);
@@ -116,4 +107,14 @@ export async function getMyTokenIds(): Promise<number[]> {
 export async function getTokenURI(tokenId: number): Promise<string> {
   const { contract } = await getContract();
   return await contract.tokenURI(tokenId);
+}
+
+export async function getReadOnlyContract() {
+  if (!window.ethereum) throw new Error("MetaMask not detected");
+  if (!CONTRACT_ADDRESS) throw new Error("Missing NEXT_PUBLIC_CONTRACT_ADDRESS in .env.local");
+
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+
+  return { contract, provider };
 }
