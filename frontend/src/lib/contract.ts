@@ -54,3 +54,66 @@ export async function validateAndBurn(tokenId: number) {
   await tx.wait();
   return tx;
 }
+
+// --- AJOUTS POUR "MY TICKETS" ---
+export async function getMyAddress() {
+  const { signer } = await getContract();
+  return await signer.getAddress();
+}
+
+export async function getMyTokenIds(): Promise<number[]> {
+  const { provider, signer } = await getContract();
+
+  if (!CONTRACT_ADDRESS) throw new Error("Missing CONTRACT_ADDRESS");
+
+  const owner = (await signer.getAddress()).toLowerCase();
+
+  // Signature ERC721 standard
+  const TRANSFER_TOPIC0 = ethers.id("Transfer(address,address,uint256)");
+
+  // topics[1] et topics[2] = addresses indexées (32 bytes)
+  const ownerTopic = ethers.zeroPadValue(owner, 32);
+
+  // Logs: Transfer(* -> owner)
+  const toLogs = await provider.getLogs({
+    address: CONTRACT_ADDRESS,
+    fromBlock: 0,
+    toBlock: "latest",
+    topics: [TRANSFER_TOPIC0, null, ownerTopic],
+  });
+
+  // Logs: Transfer(owner -> *)
+  const fromLogs = await provider.getLogs({
+    address: CONTRACT_ADDRESS,
+    fromBlock: 0,
+    toBlock: "latest",
+    topics: [TRANSFER_TOPIC0, ownerTopic],
+  });
+
+  // On parse avec une interface minimale (pas besoin de ton ABI complet)
+  const iface = new ethers.Interface([
+    "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
+  ]);
+
+  const owned = new Set<number>();
+
+  for (const log of toLogs) {
+    const parsed = iface.parseLog(log);
+    const tokenId = Number(parsed.args.tokenId);
+    owned.add(tokenId);
+  }
+
+  for (const log of fromLogs) {
+    const parsed = iface.parseLog(log);
+    const tokenId = Number(parsed.args.tokenId);
+    owned.delete(tokenId);
+  }
+
+  return Array.from(owned).sort((a, b) => a - b);
+}
+
+
+export async function getTokenURI(tokenId: number): Promise<string> {
+  const { contract } = await getContract();
+  return await contract.tokenURI(tokenId);
+}
