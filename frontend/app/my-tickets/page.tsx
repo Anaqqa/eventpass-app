@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getMyTokenIds, getTokenURI } from "../../src/lib/contract";
 import { ipfsToHttp } from "../../src/lib/ipfsGateway";
+import { QRCodeCanvas } from "qrcode.react";
 
 type TicketMeta = {
   name?: string;
@@ -41,7 +42,6 @@ function parseDataTokenURI(tokenURI: string): TicketMeta | null {
 
   try {
     const b64 = tokenURI.slice(prefix.length);
-    // decode base64 -> utf8
     const json = decodeURIComponent(escape(window.atob(b64)));
     return JSON.parse(json) as TicketMeta;
   } catch {
@@ -69,12 +69,10 @@ export default function MyTicketsPage() {
           let meta: TicketMeta | undefined;
           let metaError: string | undefined;
 
-          // 
           const metaFromData = parseDataTokenURI(tokenURI);
           if (metaFromData) {
             meta = metaFromData;
           } else {
-            // 
             try {
               const url = ipfsToHttp(tokenURI);
               const res = await fetch(url, { cache: "no-store" });
@@ -143,8 +141,14 @@ export default function MyTicketsPage() {
             const tier = extractTier(t.meta).replace("_", " ");
             const seat = extractSeat(t.meta);
 
-            // Image: supporte ipfs:// ou http(s):// si meta.image
             const imageUrl = t.meta?.image ? ipfsToHttp(t.meta.image) : null;
+
+            // Valeur du QR : URL directe de validation
+            // (fonctionne en démo : tu scans -> ça ouvre /validate?tokenId=...)
+            const qrValue =
+              typeof window !== "undefined"
+                ? `${window.location.origin}/validate?tokenId=${t.tokenId}`
+                : `/validate?tokenId=${t.tokenId}`;
 
             return (
               <div key={t.tokenId} className="rounded-xl border p-4">
@@ -156,6 +160,7 @@ export default function MyTicketsPage() {
                 </div>
 
                 <div className="mt-3 flex items-start gap-4">
+                  {/* Image */}
                   <div className="h-20 w-20 overflow-hidden rounded-lg bg-gray-100">
                     {imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -163,6 +168,7 @@ export default function MyTicketsPage() {
                     ) : null}
                   </div>
 
+                  {/* Infos */}
                   <div className="flex-1">
                     <div className="text-sm text-gray-700">
                       Siège : <span className="font-medium">{seat}</span>
@@ -192,6 +198,14 @@ export default function MyTicketsPage() {
                         Valider
                       </button>
                     </div>
+                  </div>
+
+                  {/* QR Code */}
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="rounded-lg border bg-white p-2">
+                      <QRCodeCanvas value={qrValue} size={92} />
+                    </div>
+                    <div className="text-[11px] text-gray-600">Scan → Valider</div>
                   </div>
                 </div>
               </div>
