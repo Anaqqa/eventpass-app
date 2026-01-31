@@ -1,167 +1,117 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { buyTicket } from "../../src/lib/contract";
 import { buildTicketMetadata } from "../../src/lib/metadata";
 import { uploadJSONToIPFS } from "../../src/lib/ipfs";
-import { buyTicket as buyTicketOnChain } from "../../src/lib/contract"; 
-
-type TicketType = "EARLY_BIRD" | "STANDARD" | "PREMIUM" | "VIP";
-
-// mapping type -> index (doit matcher ton smart contract)
-const TYPE_INDEX: Record<TicketType, number> = {
-  EARLY_BIRD: 0,
-  STANDARD: 1,
-  PREMIUM: 2,
-  VIP: 3,
-};
-
-// mapping type -> prix (doit matcher ton contrat)
-const PRICE_ETH: Record<TicketType, string> = {
-  EARLY_BIRD: "0.08",
-  STANDARD: "0.10",
-  PREMIUM: "0.15",
-  VIP: "0.25",
-};
+import { TicketType, TICKET_NAMES, TICKET_PRICES_ETH } from "../../src/lib/contractABI";
 
 export default function BuyPage() {
-  const [selectedType, setSelectedType] = useState<TicketType>("EARLY_BIRD");
-
+  const [tier, setTier] = useState<TicketType>(TicketType.STANDARD);
+  const [seat, setSeat] = useState("A-45");
+  const [loading, setLoading] = useState(false);
   const [ipfsUri, setIpfsUri] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
-
-  const [loadingIpfs, setLoadingIpfs] = useState(false);
-  const [loadingBuy, setLoadingBuy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const generateIpfs = async () => {
-    setLoadingIpfs(true);
+  const tierName = useMemo(() => TICKET_NAMES[tier], [tier]);
+  const ethPrice = useMemo(() => TICKET_PRICES_ETH[tier], [tier]);
+
+  const onBuy = async () => {
+    setLoading(true);
     setErr(null);
     setIpfsUri(null);
     setTxHash(null);
 
     try {
+      const tierStr =
+        tier === TicketType.EARLY_BIRD ? "EARLY_BIRD" :
+        tier === TicketType.STANDARD ? "STANDARD" :
+        tier === TicketType.PREMIUM ? "PREMIUM" : "VIP";
+
       const metadata = buildTicketMetadata({
         eventName: "Concert Demo",
-        type: selectedType,
-        valueEur:
-          selectedType === "EARLY_BIRD"
-            ? 80
-            : selectedType === "STANDARD"
-            ? 100
-            : selectedType === "PREMIUM"
-            ? 150
-            : 250,
-        ipfsDocumentHash: "QmDemoDocHash123",
-        seatNumber: "A-45",
+        tier: tierStr,
+        seatNumber: seat,
         venue: "Stade de France",
         dateISO: "2026-06-15T20:00:00Z",
-        previousOwners: [],
+        valueEur: tier === TicketType.VIP ? 250 : tier === TicketType.PREMIUM ? 150 : tier === TicketType.STANDARD ? 100 : 80,
       });
 
       const uri = await uploadJSONToIPFS(metadata);
       setIpfsUri(uri);
-      return uri;
-    } catch (e: any) {
-      setErr(e?.message ?? "Erreur upload IPFS");
-      return null;
-    } finally {
-      setLoadingIpfs(false);
-    }
-  };
 
-  const handleBuy = async () => {
-    setLoadingBuy(true);
-    setErr(null);
-    setTxHash(null);
-
-    try {
-      // 1) Assure-toi d'avoir un tokenURI IPFS
-      const uri = ipfsUri ?? (await generateIpfs());
-      if (!uri) throw new Error("Impossible de générer l'URI IPFS");
-
-      // 2) Appel smart contract via ton helper
-      const typeIndex = TYPE_INDEX[selectedType];
-      const priceEth = PRICE_ETH[selectedType];
-
-      const tx = await buyTicketOnChain(typeIndex, uri, priceEth);
+      const tx = await buyTicket(tier, uri, ethPrice);
       setTxHash(tx.hash);
     } catch (e: any) {
       setErr(e?.shortMessage || e?.message || "Erreur achat");
     } finally {
-      setLoadingBuy(false);
+      setLoading(false);
     }
   };
 
   return (
     <main className="min-h-screen p-6">
       <div className="mx-auto w-full max-w-2xl rounded-2xl border p-8">
-        <a href="/" className="text-sm underline">
-          ← Retour
-        </a>
+        <a href="/" className="text-sm underline">← Retour</a>
 
         <h1 className="mt-4 text-2xl font-bold">Acheter un billet</h1>
         <p className="mt-2 text-gray-600">
-          Flux : metadata → IPFS → tokenURI → buyTicket(type, tokenURI).
+          Flux complet : metadata → IPFS → buyTicket() on-chain.
         </p>
 
-        {/* Choix type */}
         <div className="mt-6 rounded-xl border p-4">
           <div className="font-semibold">Choisir un type</div>
-          <div className="mt-3 grid gap-2">
-            {(Object.keys(TYPE_INDEX) as TicketType[]).map((t) => (
-              <button
-                key={t}
-                onClick={() => setSelectedType(t)}
-                className={`rounded-lg border px-3 py-2 text-left text-sm hover:bg-gray-50 ${
-                  selectedType === t ? "bg-gray-50" : ""
-                }`}
-              >
-                <div className="font-medium">
-                  {t} — {PRICE_ETH[t]} ETH
-                </div>
-              </button>
-            ))}
+
+          <select
+            value={tier}
+            onChange={(e) => setTier(Number(e.target.value) as TicketType)}
+            className="mt-3 w-full rounded-lg border p-2"
+          >
+            <option value={TicketType.EARLY_BIRD}>{TICKET_NAMES[TicketType.EARLY_BIRD]}</option>
+            <option value={TicketType.STANDARD}>{TICKET_NAMES[TicketType.STANDARD]}</option>
+            <option value={TicketType.PREMIUM}>{TICKET_NAMES[TicketType.PREMIUM]}</option>
+            <option value={TicketType.VIP}>{TICKET_NAMES[TicketType.VIP]}</option>
+          </select>
+
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <input
+              className="rounded-lg border p-2"
+              value={seat}
+              onChange={(e) => setSeat(e.target.value)}
+              placeholder="Seat (ex: A-45)"
+            />
+            <div className="rounded-lg border p-2 text-sm">
+              Prix : <b>{ethPrice} ETH</b>
+            </div>
           </div>
-        </div>
 
-        {/* IPFS */}
-        <div className="mt-6 rounded-xl border p-4">
-          <div className="font-semibold">Étape 1 — Tester l’upload IPFS</div>
           <button
-            onClick={generateIpfs}
-            disabled={loadingIpfs}
-            className="mt-3 rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-60"
+            onClick={onBuy}
+            disabled={loading}
+            className="mt-4 w-full rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-60"
           >
-            {loadingIpfs ? "Upload en cours..." : "Tester l’upload IPFS"}
+            {loading ? "Achat..." : `Acheter ${tierName} (${ethPrice} ETH)`}
           </button>
-
-          {ipfsUri && (
-            <div className="mt-3 rounded-lg bg-gray-50 p-3 text-sm text-gray-700">
-              URI : <span className="font-mono">{ipfsUri}</span>
-            </div>
-          )}
         </div>
 
-        {/* Achat */}
-        <div className="mt-6 rounded-xl border p-4">
-          <div className="font-semibold">Étape 2 — Acheter maintenant</div>
-          <button
-            onClick={handleBuy}
-            disabled={loadingBuy}
-            className="mt-3 rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-60"
-          >
-            {loadingBuy ? "Transaction..." : `Acheter (${PRICE_ETH[selectedType]} ETH)`}
-          </button>
+        {ipfsUri && (
+          <div className="mt-4 rounded-lg bg-gray-50 p-3 text-sm">
+            IPFS URI : <span className="font-mono break-all">{ipfsUri}</span>
+          </div>
+        )}
 
-          {txHash && (
-            <div className="mt-3 rounded-lg bg-gray-50 p-3 text-sm text-gray-700">
-              Tx Hash : <span className="font-mono">{txHash}</span>
+        {txHash && (
+          <div className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">
+            ✅ Achat confirmé — Tx : <span className="font-mono break-all">{txHash}</span>
+            <div className="mt-2 text-xs text-green-700">
+              Va dans <b>Mes billets</b> puis clique <b>Rafraîchir</b>.
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {err && (
-          <div className="mt-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">
+          <div className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
             {err}
           </div>
         )}

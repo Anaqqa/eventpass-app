@@ -1,29 +1,28 @@
+// frontend/src/lib/contractABI.ts
+
 export const CONTRACT_ABI = [
-  // Events
+  // Events (ceux que tu as)
   "event TicketPurchased(uint256 indexed tokenId, address indexed buyer, uint8 ticketType, uint256 price)",
   "event TicketListed(uint256 indexed tokenId, address indexed seller, uint256 price)",
   "event TicketResold(uint256 indexed tokenId, address indexed from, address indexed to, uint256 price)",
   "event TicketValidated(uint256 indexed tokenId, address indexed owner)",
   "event TicketPriceUpdated(uint8 indexed ticketType, uint256 newPrice)",
 
-  // Main Functions
+  // Write
   "function buyTicket(uint8 ticketType, string tokenURI) payable",
   "function listForResale(uint256 tokenId, uint256 price)",
   "function buyResale(uint256 listingId) payable",
   "function validateAndBurn(uint256 tokenId)",
 
-  // View Functions
+  // Read
   "function getTicketPrice(uint8 ticketType) view returns (uint256)",
-  "function canTransact(address user) view returns (bool)",
-  "function canTransfer(uint256 tokenId) view returns (bool)",
   "function getListing(uint256 listingId) view returns (uint256 tokenId, address seller, uint256 price, bool isActive)",
-  "function balanceOf(address owner) view returns (uint256)",
-  "function ownerOf(uint256 tokenId) view returns (address)",
   "function tokenURI(uint256 tokenId) view returns (string)",
+  "function ownerOf(uint256 tokenId) view returns (address)",
+  "function balanceOf(address owner) view returns (uint256)",
 ] as const;
 
-export const CONTRACT_ADDRESS =
-  process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ?? "";
+export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ?? "";
 
 export enum TicketType {
   EARLY_BIRD = 0,

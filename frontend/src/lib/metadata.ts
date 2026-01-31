@@ -1,29 +1,37 @@
-export type TicketType = "EARLY_BIRD" | "STANDARD" | "PREMIUM" | "VIP";
+// frontend/src/lib/metadata.ts
 
-export function buildTicketMetadata(params: {
+export type BuildTicketInput = {
   eventName: string;
-  type: TicketType;
-  valueEur: number;
-  ipfsDocumentHash: string; // hash IPFS du doc (image/qr/pdf)
-  seatNumber: string;
-  venue: string;
-  dateISO: string;
-  previousOwners?: string[];
-}) {
-  const now = Math.floor(Date.now() / 1000);
+  tier: "EARLY_BIRD" | "STANDARD" | "PREMIUM" | "VIP";
+  seatNumber?: string;
+  venue?: string;
+  dateISO?: string;
+  valueEur?: number;
+  ipfsDocumentHash?: string;
+};
+
+export function buildTicketMetadata(input: BuildTicketInput) {
+  const {
+    eventName,
+    tier,
+    seatNumber = "—",
+    venue = "—",
+    dateISO = new Date().toISOString(),
+    valueEur,
+    ipfsDocumentHash,
+  } = input;
 
   return {
-    name: `${params.eventName} - ${params.type} ${params.seatNumber}`,
-    type: params.type,
-    value: `${params.valueEur} EUR`,
-    hash: params.ipfsDocumentHash,
-    previousOwners: params.previousOwners ?? [],
-    createdAt: String(now),
-    lastTransferAt: String(now),
-    eventDetails: {
-      venue: params.venue,
-      date: params.dateISO,
-      seatNumber: params.seatNumber,
-    },
+    name: `EventPass — ${eventName} (${tier})`,
+    description: `Ticket NFT pour ${eventName}.`,
+    image: "ipfs://bafkreihdummyimagecid", // si tu as une vraie image IPFS, remplace-la
+    attributes: [
+      { trait_type: "Tier", value: tier },
+      { trait_type: "Seat", value: seatNumber },
+      { trait_type: "Venue", value: venue },
+      { trait_type: "Date", value: dateISO },
+      ...(typeof valueEur === "number" ? [{ trait_type: "ValueEUR", value: valueEur }] : []),
+      ...(ipfsDocumentHash ? [{ trait_type: "DocHash", value: ipfsDocumentHash }] : []),
+    ],
   };
 }

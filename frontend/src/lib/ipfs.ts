@@ -1,15 +1,19 @@
-export async function uploadJSONToIPFS(data: any): Promise<string> {
+// frontend/src/lib/ipfs.ts
+
+export async function uploadJSONToIPFS(json: any): Promise<string> {
   const res = await fetch("/api/ipfs/json", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+    body: JSON.stringify(json),
   });
 
-  const out = await res.json();
-
   if (!res.ok) {
-    throw new Error(out?.error ?? "Upload IPFS failed");
+    const txt = await res.text().catch(() => "");
+    throw new Error(`IPFS upload failed (${res.status}) ${txt}`);
   }
 
-  return out.uri as string; // ex: ipfs://Qm...
+  const data = await res.json();
+  if (!data?.uri) throw new Error("IPFS upload: missing uri in response");
+
+  return data.uri as string; // ipfs://CID
 }
