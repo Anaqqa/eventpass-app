@@ -27,7 +27,6 @@ Effets :
 	•	Démarre le lock de 10 minutes
 	•	Émet l’événement TicketPurchased
 
-⸻
 
 listForResale(tokenId, price)
 
@@ -47,7 +46,6 @@ Effets :
 	•	Crée un listing on-chain
 	•	Émet l’événement TicketListed
 
-⸻
 
 ## buyResale(listingId) payable
 
@@ -68,7 +66,6 @@ Effets :
 	•	Incrément du compteur de revente
 	•	Émet l’événement TicketResold
 
-⸻
 
 ## validateAndBurn(tokenId)
 
@@ -96,7 +93,6 @@ Les règles suivantes sont strictement appliquées par le smart contract :
 	•	Un billet ne peut être revendu qu’une seule fois
 	•	Un billet validé est définitivement brûlé
 
-⸻
 
  Événements (Events)
 
@@ -111,7 +107,6 @@ event TicketPurchased(
 
 Émis lors de l’achat initial d’un billet.
 
-⸻
 
 TicketListed
 
@@ -123,7 +118,6 @@ event TicketListed(
 
 Émis lorsqu’un billet est mis en revente.
 
-⸻
 
 TicketResold
 
@@ -136,7 +130,6 @@ event TicketResold(
 
 Émis lorsqu’un billet est revendu avec succès.
 
-⸻
 
 TicketValidated
 
@@ -147,7 +140,6 @@ event TicketValidated(
 
 Émis lorsqu’un billet est validé et brûlé à l’entrée de l’événement.
 
-⸻
 
 ## Intégration Frontend
 
