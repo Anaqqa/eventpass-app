@@ -152,11 +152,11 @@ Inclut :
 	•	Bonus QR Code
 
 # Bonus implémentés
-	•	✅ QR Code par billet
-	•	✅ Metadata on-chain / data URI
-	•	✅ Marketplace de revente
-	•	✅ Validation par burn
-	•	✅ Sécurité anti-scalping
+	•	QR Code par billet
+	•   Metadata on-chain / data URI
+	•	Marketplace de revente
+	•	Validation par burn
+	•	Sécurité anti-scalping
 
  # Conclusion
 
