@@ -283,3 +283,5 @@ getListing(uint256) → Listing
 ## 📝 License
 
 MIT
+
+# Projet réalisé par : Fatiha Najim & Aminata Sylla
